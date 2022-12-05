@@ -44,9 +44,9 @@ public class DriveSubsystem extends SubsystemBase {
       motors[i].configNeutralDeadband(0.001);
       if (i < 2)
       {
-        motors[i].setInverted(TalonFXInvertType.CounterClockwise);
-      } else {
         motors[i].setInverted(TalonFXInvertType.Clockwise);
+      } else {
+        motors[i].setInverted(TalonFXInvertType.CounterClockwise);
       }
     }
   }

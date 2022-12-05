@@ -34,7 +34,7 @@ public class DriveCommand extends CommandBase {
         double pos = m_controller.getRightTriggerAxis();
         double neg = m_controller.getLeftTriggerAxis();
         forward = pos - neg;
-        rot = m_controller.getLeftX();
+        rot = -m_controller.getLeftX();
         double absForw = Math.abs(forward);
 
         rot = 0.60* rot; // Scaling of inputs
