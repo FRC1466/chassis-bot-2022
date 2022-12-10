@@ -3,6 +3,7 @@ package frc.robot.commands;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
+import frc.robot.Constants.DriveConstants;
 import frc.robot.subsystems.DriveSubsystem;
 
 import java.lang.Math;
@@ -10,111 +11,47 @@ import java.lang.Math;
 public class DriveCommand extends CommandBase {
     private final DriveSubsystem m_drive;
     private final XboxController m_controller;
-    private boolean m_isPID;
-    private int limitIter = 0;
-    private boolean isLimit = false;
-    private int stopIter = 0;
-    private int listIter = 0;
-    private double pastForward[] = {0, 0, 0, 0, 0};
+    private int PIDIter = 0;
     private double forward;
     private double rot;
     
-    public DriveCommand(DriveSubsystem subsystem, XboxController controller, boolean PID) {
+    public DriveCommand(DriveSubsystem subsystem, XboxController controller) {
         m_drive = subsystem;
         addRequirements(m_drive);
         m_controller = controller;
-        m_isPID = PID;
+        initializeLimiters();
     }
 
-    public void togglePID() {
-        m_isPID = !m_isPID;
-    }
+    private void drive() {
+        forward = 
+            (m_controller.getRightTriggerAxis() - m_controller.getLeftTriggerAxis())
+            * DriveConstants.FORWARD_SCALE;
+        rot = m_controller.getLeftX() * DriveConstants.ROT_SCALE;
+        double absRotPercent = Math.abs(rot/DriveConstants.ROT_SCALE);
 
-    private void m_arcadeDrive() {
-        double pos = m_controller.getRightTriggerAxis();
-        double neg = m_controller.getLeftTriggerAxis();
-        forward = pos - neg;
-        rot = -m_controller.getLeftX();
-        double absForw = Math.abs(forward);
-
-        rot = 0.60* rot; // Scaling of inputs
-        forward = 0.8* forward;
-
-        if (absForw > 0.7) {
-            limitIter = 10; // start timer if power is too high
-        }
-        if (limitIter > 0) {
-            limitIter--;
-            isLimit = true; // lower timer and set bool
-        } else {
-            isLimit = false;
-        }
-        
-        for(int i = 0; i<pastForward.length; i++) {
-            if (pastForward[i]<0&&forward>0&&isLimit==true) {
-                stopIter=15;
-            } else if (pastForward[i]>0&&forward<0&&isLimit==true) { // logic for limiter, set limiter for a certain time
-                stopIter=15;
-            }
+        if (absRotPercent < 0.10) { // deadband
+            rot = 0;
         }
 
-        if (stopIter > 0) {
-            stopIter--;
-            forward=0; // lower limiter time and set into effect limiter
-        }
-
-        /* if (isLimit) {
-            System.out.println(isLimit);
-        } */
-
-        pastForward[listIter%pastForward.length] = forward; // set lists and iter
-        listIter++;
-
-        /* System.out.println(pastForward[(listIter-1)%pastForward.length]);
-        System.out.println(forward); */
-
-        m_drive.arcadeDrive(-forward, rot);
-    }
-
-
-
-    private void m_arcadeDrivePID() {
-        double pos = m_controller.getRightTriggerAxis();
-        double neg = m_controller.getLeftTriggerAxis();
-        forward = pos - neg;
-        rot = m_controller.getLeftX();
-        double absForw = Math.abs(forward);
-        double absRot = Math.abs(rot);
-
-        rot = Math.pow(rot, 3) * 0.8; // scale inputs
-        forward = Math.pow(forward, 3);
-
-
-        if (absRot > 0.10) { // input logic
-            if (absForw > 0.50) {
-                rot = 1.2*rot;
-            } else {
-                rot = 0.6*rot;
-            }
-
-        } else {
-        rot = 0;
-        }
-
-        m_drive.arcadeDrivePID(-forward, rot);
+        m_drive.updateSpeeds(forward, rot);
+        m_drive.drivePID();
     }
 
     private void updateSmartDashboard() {
         SmartDashboard.putNumber("forward", forward);
         SmartDashboard.putNumber("rotation", rot);
-    }
-
-    private void updateSmartDashboardPID() {
-        SmartDashboard.putNumber("forward", forward);
-        SmartDashboard.putNumber("rotation", rot);
         SmartDashboard.putNumber("Drive position", m_drive.getCurrentPos()[0]);
         SmartDashboard.putNumber("Drive error", m_drive.getCurrentError()[0]);
-        SmartDashboard.putBoolean("PID active", m_isPID);
+    }
+
+    private void updateLimiters() {
+        DriveConstants.FORWARD_SCALE = SmartDashboard.getNumber("forward scale", DriveConstants.FORWARD_SCALE_INITIAL);
+        DriveConstants.ROT_SCALE = SmartDashboard.getNumber("rot scale", DriveConstants.ROT_SCALE_INITIAL);
+    }
+
+    private void initializeLimiters() {
+        SmartDashboard.putNumber("forward scale", DriveConstants.FORWARD_SCALE);
+        SmartDashboard.putNumber("rot scale", DriveConstants.ROT_SCALE);
     }
 
     @Override
@@ -124,13 +61,12 @@ public class DriveCommand extends CommandBase {
 
     @Override
     public void execute() {
-        if (m_isPID) {
-            m_arcadeDrivePID();
-            updateSmartDashboardPID();
-        }
-        else {
-            m_arcadeDrive();
-            updateSmartDashboard();
+        updateLimiters();
+        drive();
+        updateSmartDashboard();
+        if(PIDIter*20>5000) { // 5000ms refresh time for PID
+            m_drive.updatePIDConstants();
+            m_drive.updatePID();
         }
     }
 }

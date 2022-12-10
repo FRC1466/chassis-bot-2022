@@ -4,10 +4,11 @@
 
 package frc.robot.subsystems;
 
-import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.PIDConstants;
-import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.TalonFXControlMode;
@@ -20,21 +21,14 @@ public class DriveSubsystem extends SubsystemBase {
 
   // motor array in a list for easy access (could do dict in future?)
   WPI_TalonFX[] motors = new WPI_TalonFX[] {
-    new WPI_TalonFX(DriveConstants.kLeftMotor1Port),  // motors[0] = left1
-    new WPI_TalonFX(DriveConstants.kLeftMotor2Port),  // motors[1] = left2
-    new WPI_TalonFX(DriveConstants.kRightMotor1Port), // motors[2] = right1
-    new WPI_TalonFX(DriveConstants.kRightMotor2Port)  // motors[3] = right2
+    new WPI_TalonFX(DriveConstants.FRONT_LEFT_PORT),  // motors[0] = left1
+    new WPI_TalonFX(DriveConstants.BACK_LEFT_PORT),  // motors[1] = left2
+    new WPI_TalonFX(DriveConstants.FRONT_RIGHT_PORT), // motors[2] = right1
+    new WPI_TalonFX(DriveConstants.BACK_RIGHT_PORT)  // motors[3] = right2
   }; 
 
-
-
-
-
-
-  // The robot's drive
-  private final DifferentialDrive m_drive = new DifferentialDrive(
-      new MotorControllerGroup(motors[0], motors[1]), 
-      new MotorControllerGroup(motors[2], motors[3]));
+  ChassisSpeeds speeds = new ChassisSpeeds(0, 0, 0);
+  DifferentialDriveWheelSpeeds wheelSpeeds = DriveConstants.KINEMATICS.toWheelSpeeds(speeds);
 
   private void initializeMotors() { //set configs of motors
     for (int i=0; i<motors.length; i++) {
@@ -42,7 +36,7 @@ public class DriveSubsystem extends SubsystemBase {
       motors[i].set(ControlMode.PercentOutput, 0);
       motors[i].setNeutralMode(NeutralMode.Brake);
       motors[i].configNeutralDeadband(0.001);
-      if (i < 2)
+      if (i < motors.length/2)
       {
         motors[i].setInverted(TalonFXInvertType.Clockwise);
       } else {
@@ -53,35 +47,55 @@ public class DriveSubsystem extends SubsystemBase {
   
 
   private void initializePID() { //set configs of PID
-    for (int i=0; i<motors.length; i++) 
+    for (WPI_TalonFX motor : motors) 
     {
-      motors[i].configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor,
-      PIDConstants.kPIDLoopIdx, 
-      PIDConstants.kTimeoutMs);
+      motor.configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor,
+      PIDConstants.IDX, 
+      PIDConstants.TIMEOUT_MS);
 
 
       /* Config the peak and nominal outputs */
-      motors[i].configNominalOutputForward(0, PIDConstants.kTimeoutMs);
-      motors[i].configNominalOutputReverse(0, PIDConstants.kTimeoutMs);
-      motors[i].configPeakOutputForward(PIDConstants.kDriveGainsVelocity.kPeakOutput, PIDConstants.kTimeoutMs);
-      motors[i].configPeakOutputReverse(-PIDConstants.kDriveGainsVelocity.kPeakOutput, PIDConstants.kTimeoutMs);
+      motor.configNominalOutputForward(0, PIDConstants.TIMEOUT_MS);
+      motor.configNominalOutputReverse(0, PIDConstants.TIMEOUT_MS);
+      motor.configPeakOutputForward(PIDConstants.DRIVE_VELOCITY.PEAK_OUTPUT, PIDConstants.TIMEOUT_MS);
+      motor.configPeakOutputReverse(-PIDConstants.DRIVE_VELOCITY.PEAK_OUTPUT, PIDConstants.TIMEOUT_MS);
 
       /* Config the Velocity closed loop gains in slot0 */
-      motors[i].config_kF(PIDConstants.kPIDLoopIdx, PIDConstants.kDriveGainsVelocity.kF, PIDConstants.kTimeoutMs);
-      motors[i].config_kP(PIDConstants.kPIDLoopIdx, PIDConstants.kDriveGainsVelocity.kP, PIDConstants.kTimeoutMs);
-      motors[i].config_kI(PIDConstants.kPIDLoopIdx, PIDConstants.kDriveGainsVelocity.kI, PIDConstants.kTimeoutMs);
-      motors[i].config_kD(PIDConstants.kPIDLoopIdx, PIDConstants.kDriveGainsVelocity.kD, PIDConstants.kTimeoutMs);
+      motor.config_kF(PIDConstants.IDX, PIDConstants.DRIVE_VELOCITY.F, PIDConstants.TIMEOUT_MS);
+      motor.config_kP(PIDConstants.IDX, PIDConstants.DRIVE_VELOCITY.P, PIDConstants.TIMEOUT_MS);
+      motor.config_kI(PIDConstants.IDX, PIDConstants.DRIVE_VELOCITY.I, PIDConstants.TIMEOUT_MS);
+      motor.config_kD(PIDConstants.IDX, PIDConstants.DRIVE_VELOCITY.D, PIDConstants.TIMEOUT_MS);
     }
+  }
+
+  public void updatePID() {
+    for (WPI_TalonFX motor : motors) {
+      motor.config_kF(PIDConstants.IDX, PIDConstants.DRIVE_VELOCITY.F, PIDConstants.TIMEOUT_MS);
+      motor.config_kP(PIDConstants.IDX, PIDConstants.DRIVE_VELOCITY.P, PIDConstants.TIMEOUT_MS);
+      motor.config_kI(PIDConstants.IDX, PIDConstants.DRIVE_VELOCITY.I, PIDConstants.TIMEOUT_MS);
+      motor.config_kD(PIDConstants.IDX, PIDConstants.DRIVE_VELOCITY.D, PIDConstants.TIMEOUT_MS);
+    }
+  }
+
+  public void updatePIDConstants() {
+    PIDConstants.DRIVE_VELOCITY.F = SmartDashboard.getNumber("vel_F", PIDConstants.DRIVE_VELOCITY.F);
+    PIDConstants.DRIVE_VELOCITY.P = SmartDashboard.getNumber("vel_P", PIDConstants.DRIVE_VELOCITY.P);
+    PIDConstants.DRIVE_VELOCITY.I = SmartDashboard.getNumber("vel_I", PIDConstants.DRIVE_VELOCITY.I);
+    PIDConstants.DRIVE_VELOCITY.D = SmartDashboard.getNumber("vel_D", PIDConstants.DRIVE_VELOCITY.D);
+  }
+
+  private void initializePIDConstants() {
+    SmartDashboard.putNumber("vel_F", PIDConstants.DRIVE_VELOCITY.F);
+    SmartDashboard.putNumber("vel_P", PIDConstants.DRIVE_VELOCITY.P);
+    SmartDashboard.putNumber("vel_I", PIDConstants.DRIVE_VELOCITY.I);
+    SmartDashboard.putNumber("vel_D", PIDConstants.DRIVE_VELOCITY.D);
   }
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
-    // We need to invert one side of the drivetrain so that positive voltages
-    // result in both sides moving forward. Depending on how your robot's
-    // gearbox is constructed, you might have to invert the left side instead.
-
     initializeMotors();
     initializePID();
+    initializePIDConstants();
   }
 
   @Override
@@ -89,58 +103,24 @@ public class DriveSubsystem extends SubsystemBase {
 
   }
 
-
-
-  /**
-   * Drives the robot using arcade controls.
-   *
-   * @param fwd the commanded forward movement
-   * @param rot the commanded rotation
-   */
-  public void arcadeDrive(double fwd, double rot) {
-    m_drive.arcadeDrive(fwd, rot);
-  }
-
   /**
    * Drives the robot using PID velocity
-   * 
-   * @param targetFwd the target forward velocity
-   * @param targetRot the target rotation velocity
    */
-  public void arcadeDrivePID(double targetFwd, double targetRot) {
-    double targetVelocity_UnitsPer100msRight = (targetFwd - targetRot) * 2000.0 * 2048.0 / 600.0 * DriveConstants.kDrivePercentDefaultPID;
-    double targetVelocity_UnitsPer100msLeft = (targetFwd + targetRot) * 2000.0 * 2048.0 / 600.0 * DriveConstants.kDrivePercentDefaultPID;
-    for (int i=0; i<(motors.length/2); i++) {
-      motors[i].set(TalonFXControlMode.Velocity, targetVelocity_UnitsPer100msLeft);
-      m_drive.feed(); // REALLY IMPORTANT FOR DIFFERENTIAL DRIVE!!!
-      System.out.println(targetVelocity_UnitsPer100msLeft);
+  public void drivePID() {
+    for (int i=0; i<(motors.length/2); i++) { // left
+      motors[i].set(TalonFXControlMode.Velocity, wheelSpeeds.leftMetersPerSecond);
     }
-    for (int i=(motors.length/2); i<motors.length; i++) {
-      motors[i].set(TalonFXControlMode.Velocity, targetVelocity_UnitsPer100msRight);
-      m_drive.feed();
-      System.out.println(targetVelocity_UnitsPer100msRight);
+    for (int i=(motors.length/2); i<motors.length; i++) { // right
+      motors[i].set(TalonFXControlMode.Velocity, wheelSpeeds.rightMetersPerSecond);
     }
+    SmartDashboard.putNumber("left speeds", wheelSpeeds.leftMetersPerSecond);
+    SmartDashboard.putNumber("right speeds", wheelSpeeds.rightMetersPerSecond);
   }
 
-  /**
-   * Drives the robot using position PID
-   * 
-   * @param fwd the target forward position
-   * @param rot the target rotation position
-   */
-  public void arcadeDriveAutoPID(double fwd, double rot) {
-    double targetRight = (fwd - rot);
-    double targetLeft = (fwd + rot);
-    for (int i=0; i<(motors.length/2); i++) {
-      motors[i].set(TalonFXControlMode.Position, targetLeft);
-      m_drive.feed(); // REALLY IMPORTANT FOR DIFFERENTIAL DRIVE!!!
-      System.out.println("fed");
-    }
-    for (int i=(motors.length/2); i<motors.length; i++) {
-      motors[i].set(TalonFXControlMode.Position, targetRight);
-      m_drive.feed();
-      System.out.println("fed");
-    }
+  public void updateSpeeds(double vx, double rot) {
+    speeds.vxMetersPerSecond = vx;
+    speeds.omegaRadiansPerSecond = rot;
+    wheelSpeeds = DriveConstants.KINEMATICS.toWheelSpeeds(speeds);
   }
 
   /**
@@ -153,7 +133,6 @@ public class DriveSubsystem extends SubsystemBase {
     for (WPI_TalonFX wpi_TalonFX : motors) {
       wpi_TalonFX.setVoltage(0);
     }
-    m_drive.feed();
   }
 
   /**
@@ -198,22 +177,6 @@ public class DriveSubsystem extends SubsystemBase {
       motors[3].getClosedLoopTarget()
     };
     return currentTarget;
-  }
-
-  /**
-   * Sets the max output of the drive. Useful for scaling the drive to drive more slowly.
-   *
-   * @param maxOutput the maximum output to which the drive will be constrained
-   */
-  public void setMaxOutput(double maxOutput) {
-    m_drive.setMaxOutput(maxOutput);
-  }
-
-  /**
-   * Feeds differential drive.
-   */
-  public void pacifyDrive() {
-    m_drive.feed();
   }
 
   /**

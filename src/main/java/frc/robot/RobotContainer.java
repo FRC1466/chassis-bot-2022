@@ -23,15 +23,14 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
  */
 public class RobotContainer {
   // The robot's subsystems
-  private final DriveSubsystem m_robotDrive = new DriveSubsystem();
+  private final DriveSubsystem m_drive = new DriveSubsystem();
   
 
   // The driver's controller
-  XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
+  XboxController m_driverController = new XboxController(OIConstants.DRIVER_PORT);
 
   // the default commands
-  DriveCommand m_DriveCommand = new DriveCommand(m_robotDrive, m_driverController, false);
-  DriveCommand m_DriveCommandPID = new DriveCommand(m_robotDrive, m_driverController, true);
+  DriveCommand m_DriveCommand = new DriveCommand(m_drive, m_driverController);
   
 
 
@@ -42,13 +41,9 @@ public class RobotContainer {
     // Configure the button bindings
     configureButtonBindings();
 
-    // max output of drivesubsystem
-    m_robotDrive.setMaxOutput(DriveConstants.kDrivePercentDefault);
-    
-
     // Configure default commands
     // Set the default drive command to split-stick arcade drive
-    m_robotDrive.setDefaultCommand(
+    m_drive.setDefaultCommand(
         m_DriveCommand
     );
   }
@@ -63,12 +58,14 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // Drive at half speed when B is held
     new JoystickButton(m_driverController, Button.kB.value)
-        .whenPressed(() -> m_robotDrive.setMaxOutput(DriveConstants.kDrivePercentActive))
-        .whenReleased(() -> m_robotDrive.setMaxOutput(DriveConstants.kDrivePercentDefault));
-    new JoystickButton(m_driverController, Button.kA.value)
-        .whenPressed(m_DriveCommandPID)
-        .whenReleased(m_DriveCommand);
-        // A button is for PID
+        .whenPressed(() -> {
+          DriveConstants.FORWARD_SCALE*=0.5;
+          DriveConstants.ROT_SCALE*=0.5;
+        })
+        .whenReleased(() -> {
+          DriveConstants.FORWARD_SCALE=DriveConstants.FORWARD_SCALE_INITIAL;
+          DriveConstants.ROT_SCALE=DriveConstants.ROT_SCALE_INITIAL;
+        });
     } 
     
 
@@ -79,10 +76,8 @@ public class RobotContainer {
    *
    * @return the command to run in autonomous
    */
-
-
   public Command getAuto() {
-    return new ComplexAuto(m_robotDrive);
+    return new ComplexAuto(m_drive);
   }
 
 
