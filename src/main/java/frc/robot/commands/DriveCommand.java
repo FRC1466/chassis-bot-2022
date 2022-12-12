@@ -68,5 +68,6 @@ public class DriveCommand extends CommandBase {
             m_drive.updatePIDConstants();
             m_drive.updatePID();
         }
+        SmartDashboard.putNumber("ERROR", m_drive.getCurrentError()[0]);
     }
 }

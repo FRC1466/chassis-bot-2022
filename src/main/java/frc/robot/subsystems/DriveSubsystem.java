@@ -6,6 +6,7 @@ package frc.robot.subsystems;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import frc.robot.Constants.ConversionConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.PIDConstants;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -108,10 +109,10 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public void drivePID() {
     for (int i=0; i<(motors.length/2); i++) { // left
-      motors[i].set(TalonFXControlMode.Velocity, wheelSpeeds.leftMetersPerSecond);
+      motors[i].set(TalonFXControlMode.Velocity, wheelSpeeds.leftMetersPerSecond/ConversionConstants.CTRE_NATIVE_TO_MPS);
     }
     for (int i=(motors.length/2); i<motors.length; i++) { // right
-      motors[i].set(TalonFXControlMode.Velocity, wheelSpeeds.rightMetersPerSecond);
+      motors[i].set(TalonFXControlMode.Velocity, wheelSpeeds.rightMetersPerSecond/ConversionConstants.CTRE_NATIVE_TO_MPS);
     }
     SmartDashboard.putNumber("left speeds", wheelSpeeds.leftMetersPerSecond);
     SmartDashboard.putNumber("right speeds", wheelSpeeds.rightMetersPerSecond);
