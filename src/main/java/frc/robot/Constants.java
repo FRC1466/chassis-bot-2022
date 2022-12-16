@@ -55,6 +55,18 @@ public final class Constants {
 
   }
 
+  public static final class CameraConstants {
+    public static final int
+      CAMERA_PORT = 1;
+
+    public static final double 
+      CAMERA_HEIGHT_METERS = 0.56,
+      CAMERA_X_METERS = 0.77,
+      CAMERA_Y_METERS = 0.11,
+      CAMERA_YAW_RAD = 0.0,
+      CAMERA_PITCH_RADIANS = 0.96;
+  }
+
   public static final class OIConstants {
     public static final int 
       DRIVER_PORT = 0,

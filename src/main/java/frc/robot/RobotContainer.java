@@ -9,6 +9,7 @@ import static edu.wpi.first.wpilibj.XboxController.Button;
 import edu.wpi.first.wpilibj.XboxController;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
+import frc.robot.subsystems.CameraSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.commands.DriveCommand;
 import frc.robot.commands.Autonomous.ComplexAuto;
@@ -23,14 +24,16 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
  */
 public class RobotContainer {
   // The robot's subsystems
-  private final DriveSubsystem m_drive = new DriveSubsystem();
+  private final CameraSubsystem m_cam = new CameraSubsystem();
+  private final DriveSubsystem m_drive = new DriveSubsystem(m_cam);
+  
   
 
   // The driver's controller
-  XboxController m_driverController = new XboxController(OIConstants.DRIVER_PORT);
+  private final XboxController m_driverController = new XboxController(OIConstants.DRIVER_PORT);
 
   // the default commands
-  DriveCommand m_DriveCommand = new DriveCommand(m_drive, m_driverController);
+  private final DriveCommand m_DriveCommand = new DriveCommand(m_drive, m_driverController);
   
 
 

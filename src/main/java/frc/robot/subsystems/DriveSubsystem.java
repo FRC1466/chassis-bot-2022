@@ -4,8 +4,11 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import frc.robot.Constants.CameraConstants;
 import frc.robot.Constants.ConversionConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.PIDConstants;
@@ -18,7 +21,10 @@ import com.ctre.phoenix.motorcontrol.TalonFXInvertType;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 
+import org.photonvision.PhotonUtils;
+
 public class DriveSubsystem extends SubsystemBase {
+  private final CameraSubsystem m_cam;
 
   // motor array in a list for easy access (could do dict in future?)
   WPI_TalonFX[] motors = new WPI_TalonFX[] {
@@ -93,11 +99,32 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   /** Creates a new DriveSubsystem. */
-  public DriveSubsystem() {
+  public DriveSubsystem(CameraSubsystem cam) {
     initializeMotors();
     initializePID();
     initializePIDConstants();
+    m_cam = cam;
   }
+
+  private Pose2d updatePose() {
+    double temp_gyro_angle_rad = 3.1;
+    Pose2d pose = new Pose2d();
+    if (m_cam.hasTargets()) {
+        int id = m_cam.getBestAprilTagID();
+        pose = PhotonUtils.estimateFieldToRobot(
+            CameraConstants.CAMERA_HEIGHT_METERS, 
+            m_cam.getTargetHeight(id), 
+            CameraConstants.CAMERA_PITCH_RADIANS, 
+            m_cam.getBestTarget().getPitch(), 
+            new Rotation2d(m_cam.getBestTarget().getYaw()), 
+            new Rotation2d(temp_gyro_angle_rad), 
+            m_cam.getFieldToTarget(id), 
+            m_cam.getCameraToRobot());
+    }
+
+    return pose;
+    
+}
 
   @Override
   public void periodic() {
