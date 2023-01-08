@@ -17,7 +17,6 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.CameraConstants;
 
 public class CameraSubsystem {
@@ -80,7 +79,7 @@ public class CameraSubsystem {
      * @return height in meters as double
      */
     public double getTargetHeight(int id) {
-        return m_node.get(String.valueOf(id)).get("height").asDouble();
+        return m_node.get(String.valueOf(id)).get("z").asDouble();
     }
 
     /**
@@ -107,7 +106,7 @@ public class CameraSubsystem {
         return new Pose2d(
             m_node.get(String.valueOf(id)).get("x").asDouble(),
             m_node.get(String.valueOf(id)).get("y").asDouble(),
-            new Rotation2d(m_node.get(String.valueOf(id)).get("rad").asDouble())
+            new Rotation2d(m_node.get(String.valueOf(id)).get("r3d3").asDouble())
         );
     }
 
